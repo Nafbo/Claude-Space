@@ -1,0 +1,407 @@
+<!--
+  Gabarit PDF batch cooking (A4 paysage, 2 pages).
+  Ceci est un exemple REMPLI avec les données de la semaine du 17/08 — à utiliser comme
+  référence de structure et de style. Pour une nouvelle semaine : dupliquer ce fichier,
+  remplacer les contenus (dates, recettes, tags, nutrition, coûts, liste de courses,
+  étapes de préparation/cuisson) en conservant classes CSS et structure HTML telles quelles.
+  Conversion : wkhtmltopdf --enable-local-file-access --page-size A4 --orientation Landscape
+  --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 fichier.html fichier.pdf
+  Polices : uniquement DejaVu Sans/Serif/Mono (locales, pas de réseau requis).
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4 landscape; margin: 12mm 14mm; }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'DejaVu Sans', sans-serif;
+    color:#1f2a1e;
+    background:#ffffff;
+  }
+  :root{
+    --ink:#1f2a1e;
+    --moss:#4b6b4f;
+    --moss-deep:#33472f;
+    --mustard:#c98a2c;
+    --stamp:#b5482f;
+    --grey:#726f61;
+    --line:#cfcabb;
+    --paper:#f3f1e6;
+  }
+  .page{ page-break-after: always; }
+  .page:last-child{ page-break-after: auto; }
+
+  /* ---------- PAGE 1 ---------- */
+  header.top{
+    border-bottom:3px solid var(--ink);
+    padding-bottom:10px;
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  .eyebrow{
+    font-family:'DejaVu Sans Mono', monospace;
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--moss-deep);
+    margin:0 0 4px;
+  }
+  h1{
+    font-family:'DejaVu Serif', serif;
+    font-weight:bold;
+    font-size:32px;
+    margin:0 0 6px;
+    float:left;
+  }
+  .meta-box{
+    float:right;
+    text-align:right;
+    font-family:'DejaVu Sans Mono', monospace;
+    font-size:11px;
+    color:var(--grey);
+    padding-top:4px;
+  }
+  .budget-pill{
+    display:inline-block;
+    background:var(--moss);
+    color:#fff;
+    padding:5px 14px;
+    border-radius:14px;
+    font-weight:bold;
+    font-size:14px;
+    margin-top:6px;
+  }
+  .budget-pill span{font-family:'DejaVu Sans Mono', monospace; font-weight:normal; font-size:10px;}
+
+  .cols{ overflow:hidden; }
+  .col-plan{ float:left; width:58%; }
+  .col-list{ float:right; width:38%; }
+
+  .plan-title, .list-title{
+    font-family:'DejaVu Sans Mono', monospace;
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--grey);
+    margin:0 0 10px;
+  }
+
+  .day-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-left:7px solid var(--moss);
+    border-radius:4px;
+    padding:12px 16px;
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+  .day-card.fragile{ border-left-color:var(--stamp); }
+  .day-left{ float:left; width:78%; }
+  .day-right{ float:right; width:20%; text-align:right; font-family:'DejaVu Sans Mono', monospace; font-size:11px; color:var(--grey); }
+  .day-right b{ color:var(--ink); display:block; font-size:13px; }
+  .day-name{
+    font-family:'DejaVu Sans Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--grey);
+    margin-bottom:2px;
+  }
+  .recipe-name{
+    font-family:'DejaVu Serif', serif;
+    font-weight:bold;
+    font-size:18px;
+    margin:2px 0 6px;
+  }
+  .tag{
+    display:inline-block;
+    font-family:'DejaVu Sans Mono', monospace;
+    font-size:9.5px;
+    padding:2px 7px;
+    border-radius:3px;
+    border:1px solid var(--line);
+    color:var(--grey);
+    margin-right:5px;
+  }
+  .tag.kcal{color:var(--moss-deep); border-color:var(--moss);}
+  .tag.prot{color:var(--stamp); border-color:var(--stamp);}
+  .tag.cost{color:var(--mustard); border-color:var(--mustard);}
+
+  .receipt{
+    background:#fff;
+    border:1px solid var(--line);
+    padding:14px 16px 6px;
+  }
+  .r-head{ text-align:center; margin-bottom:8px; font-family:'DejaVu Sans Mono', monospace; }
+  .r-head .store{ font-family:'DejaVu Serif', serif; font-weight:bold; font-size:15px; }
+  .r-head .sub{ font-size:10px; color:var(--grey); }
+  .r-dash{ border:none; border-top:1px dashed var(--line); margin:8px 0; }
+  .rayon{
+    font-family:'DejaVu Sans Mono', monospace;
+    font-size:10.5px; font-weight:bold; text-transform:uppercase; letter-spacing:1px;
+    color:var(--moss-deep); margin:10px 0 5px;
+  }
+  ul.items{ list-style:none; margin:0; padding:0; }
+  ul.items li{
+    font-family:'DejaVu Sans Mono', monospace;
+    font-size:11.5px;
+    padding:2px 0;
+    border-bottom:1px dotted #e5e1d2;
+    overflow:hidden;
+  }
+  ul.items li .box{ color:var(--grey); margin-right:6px; }
+  ul.items li .qty{ float:right; color:var(--grey); font-size:10px; }
+  .r-total{
+    font-family:'DejaVu Serif', serif;
+    font-weight:bold; font-size:14px;
+    margin-top:10px; padding-top:8px; border-top:2px solid var(--ink);
+    overflow:hidden;
+  }
+  .r-total .lbl{ float:left; } .r-total .val{ float:right; }
+  .r-foot{ clear:both; text-align:center; font-family:'DejaVu Sans Mono', monospace; font-size:9.5px; color:var(--grey); margin-top:10px; padding-top:8px; }
+
+  .links{
+    clear:both;
+    margin-top:18px; padding-top:10px; border-top:1px solid var(--line);
+    font-family:'DejaVu Sans Mono', monospace; font-size:10px; color:var(--grey);
+  }
+
+  /* ---------- PAGE 2 : recipe steps ---------- */
+  .steps-title{
+    font-family:'DejaVu Serif', serif; font-weight:bold; font-size:26px;
+    border-bottom:3px solid var(--ink); padding-bottom:8px; margin:0 0 16px;
+  }
+  .recipe-grid{ overflow:hidden; }
+  .recipe-block{
+    float:left; width:47%; margin:0 3% 22px 0;
+    background:var(--paper); border:1px solid var(--line); border-radius:4px;
+    padding:16px 20px;
+  }
+  .recipe-block:nth-child(2n){ margin-right:0; }
+  .recipe-block h2{
+    font-family:'DejaVu Serif', serif; font-size:19px; margin:0 0 4px;
+  }
+  .recipe-block .day-label{
+    font-family:'DejaVu Sans Mono', monospace; font-size:10px; letter-spacing:1px;
+    text-transform:uppercase; color:var(--stamp); margin:0 0 10px;
+  }
+  .step-section{ margin-top:10px; }
+  .step-section h3{
+    font-family:'DejaVu Sans Mono', monospace; font-size:11px; letter-spacing:1px;
+    text-transform:uppercase; color:var(--moss-deep); margin:0 0 6px;
+    border-bottom:1px solid var(--line); padding-bottom:3px;
+  }
+  .step-section ol{ margin:0; padding-left:18px; }
+  .step-section li{ font-size:12.5px; line-height:1.5; margin-bottom:4px; }
+  .oven{
+    display:inline-block; margin-top:6px; font-family:'DejaVu Sans Mono', monospace;
+    font-size:10.5px; background:var(--stamp); color:#fff; padding:3px 9px; border-radius:3px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1 ============ -->
+<div class="page">
+  <header class="top">
+    <h1>Semaine du 17 au 20 aout</h1>
+    <div class="meta-box">
+      2 personnes &middot; sportifs<br>
+      Cuisson dimanche 16/08 &middot; conservation au frais uniquement
+      <div class="budget-pill">&asymp; 39 &euro; <span>estim. courses</span></div>
+    </div>
+  </header>
+
+  <div class="cols">
+    <div class="col-plan">
+      <p class="plan-title">Planning &mdash; 4 diners</p>
+
+      <div class="day-card fragile">
+        <div class="day-left">
+          <div class="day-name">Lundi 17/08</div>
+          <div class="recipe-name">Wrap de courgettes rapees, thon &amp; Saint Moret</div>
+          <span class="tag kcal">440 kcal</span><span class="tag prot">35 g prot.</span><span class="tag cost">&asymp; 10 &euro;</span>
+        </div>
+        <div class="day-right">J+1<b>2j frigo</b></div>
+      </div>
+
+      <div class="day-card fragile">
+        <div class="day-left">
+          <div class="day-name">Mardi 18/08</div>
+          <div class="recipe-name">Salade de pates, epinards, avocat &amp; oeufs durs</div>
+          <span class="tag kcal">630 kcal</span><span class="tag prot">25 g prot.</span><span class="tag cost">&asymp; 9 &euro;</span>
+        </div>
+        <div class="day-right">J+2<b>2j frigo</b></div>
+      </div>
+
+      <div class="day-card">
+        <div class="day-left">
+          <div class="day-name">Mercredi 19/08</div>
+          <div class="recipe-name">Aubergines a la parmigiana</div>
+          <span class="tag kcal">530 kcal</span><span class="tag prot">28 g prot.</span><span class="tag cost">&asymp; 9 &euro;</span>
+        </div>
+        <div class="day-right">J+3<b>4j frigo</b></div>
+      </div>
+
+      <div class="day-card">
+        <div class="day-left">
+          <div class="day-name">Jeudi 20/08</div>
+          <div class="recipe-name">Gratin mediterraneen (quinoa, poulet, courgette)</div>
+          <span class="tag kcal">600 kcal</span><span class="tag prot">42 g prot.</span><span class="tag cost">&asymp; 11 &euro;</span>
+        </div>
+        <div class="day-right">J+4<b>4j frigo</b></div>
+      </div>
+    </div>
+
+    <div class="col-list">
+      <p class="list-title">Liste de courses</p>
+      <div class="receipt">
+        <div class="r-head">
+          <div class="store">COURSES BATCH COOKING</div>
+          <div class="sub">semaine du 17 - 20 / 08 / 2026</div>
+        </div>
+        <hr class="r-dash">
+
+        <div class="rayon">Fruits &amp; legumes</div>
+        <ul class="items">
+          <li><span class="box">&#9633;</span>Courgettes <span class="qty">x3</span></li>
+          <li><span class="box">&#9633;</span>Tomates</li>
+          <li><span class="box">&#9633;</span>Tomates cerises</li>
+          <li><span class="box">&#9633;</span>Concombre <span class="qty">x2</span></li>
+          <li><span class="box">&#9633;</span>Carottes (a raper)</li>
+          <li><span class="box">&#9633;</span>Salade verte</li>
+          <li><span class="box">&#9633;</span>Epinards frais</li>
+          <li><span class="box">&#9633;</span>Avocats <span class="qty">x2</span></li>
+          <li><span class="box">&#9633;</span>Citron</li>
+          <li><span class="box">&#9633;</span>Oignons <span class="qty">x2</span></li>
+          <li><span class="box">&#9633;</span>Aubergines</li>
+        </ul>
+
+        <div class="rayon">Viandes &amp; poissons</div>
+        <ul class="items">
+          <li><span class="box">&#9633;</span>Thon (boite) <span class="qty">x2</span></li>
+          <li><span class="box">&#9633;</span>Poulet, blanc <span class="qty">&asymp;300g</span></li>
+        </ul>
+
+        <div class="rayon">Cremerie &amp; oeufs</div>
+        <ul class="items">
+          <li><span class="box">&#9633;</span>Saint Moret</li>
+          <li><span class="box">&#9633;</span>Oeufs <span class="qty">bte de 6-8</span></li>
+          <li><span class="box">&#9633;</span>Fromage blanc</li>
+          <li><span class="box">&#9633;</span>Mozzarella</li>
+          <li><span class="box">&#9633;</span>Parmesan</li>
+          <li><span class="box">&#9633;</span>Carres frais <span class="qty">x4</span></li>
+        </ul>
+
+        <div class="rayon">Epicerie</div>
+        <ul class="items">
+          <li><span class="box">&#9633;</span>Galettes / wraps de ble</li>
+          <li><span class="box">&#9633;</span>Pates</li>
+          <li><span class="box">&#9633;</span>Pesto</li>
+          <li><span class="box">&#9633;</span>Sauce tomate</li>
+          <li><span class="box">&#9633;</span>Quinoa</li>
+          <li><span class="box">&#9633;</span>Bouillon <span class="qty">500ml</span></li>
+          <li><span class="box">&#9633;</span>Pois chiches ou lentilles</li>
+          <li><span class="box">&#9633;</span>Moutarde <span class="qty">stock ?</span></li>
+          <li><span class="box">&#9633;</span>Huile d'olive <span class="qty">stock ?</span></li>
+        </ul>
+
+        <div class="r-total"><span class="lbl">Total estime</span><span class="val">&asymp; 39,00 &euro;</span></div>
+        <div class="r-foot">Liste complete, presumee a zero stock.<br>Retire ce que tu as deja, puis dis-le a Claude.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="links">
+    Planning hebdo (Notion) : app.notion.com/p/9067759e4a4646f08ba2fb53e565164e &nbsp;&nbsp;|&nbsp;&nbsp;
+    Base Recettes (Notion) : app.notion.com/p/d60b4737830840e88b806638fa9294f1
+  </div>
+</div>
+
+<!-- ============ PAGE 2 : recettes en detail ============ -->
+<div class="page">
+  <p class="steps-title">Preparation &amp; cuisson &mdash; les 4 recettes</p>
+
+  <div class="recipe-grid">
+
+    <div class="recipe-block">
+      <p class="day-label">Lundi &middot; 15 min &middot; pas de cuisson</p>
+      <h2>Wrap de courgettes rapees, thon &amp; Saint Moret</h2>
+      <div class="step-section">
+        <h3>Preparation</h3>
+        <ol>
+          <li>Raper les courgettes, presser pour retirer l'exces d'eau.</li>
+          <li>Egoutter le thon (2 boites), melanger avec le Saint Moret et les courgettes rapees.</li>
+          <li>Laver et couper les tomates et le concombre en des.</li>
+          <li>Garnir chaque galette du melange thon-courgettes, puis des tomates, concombre et carottes rapees.</li>
+          <li>Rouler les wraps. Ajouter un oeuf dur en accompagnement. Servir avec la salade verte.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="recipe-block">
+      <p class="day-label">Mardi &middot; 25 min &middot; cuisson pates/oeufs uniquement</p>
+      <h2>Salade de pates, epinards, avocat &amp; oeufs durs</h2>
+      <div class="step-section">
+        <h3>Preparation</h3>
+        <ol>
+          <li>Cuire les pates a l'eau bouillante salee (temps indique sur le paquet), egoutter, laisser refroidir.</li>
+          <li>Cuire les oeufs durs (9-10 min a l'eau bouillante), refroidir, ecaler, couper en morceaux (4 oeufs).</li>
+          <li>Laver les epinards, couper le concombre, les tomates cerises et un avocat en morceaux.</li>
+          <li>Preparer la sauce : ecraser le second avocat, ajouter le fromage blanc, le jus de citron, le pesto et la moutarde. Assaisonner sel, poivre, paprika.</li>
+          <li>Melanger pates, epinards, concombre, tomates cerises, avocat et oeufs durs avec la sauce.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="recipe-block">
+      <p class="day-label">Mercredi &middot; 20 min prepa + 30 min four</p>
+      <h2>Aubergines a la parmigiana</h2>
+      <div class="step-section">
+        <h3>Preparation</h3>
+        <ol>
+          <li>Emincer les aubergines en fines tranches, emincer les oignons.</li>
+          <li>Faire revenir legerement les oignons a la poele avec un filet d'huile.</li>
+          <li>Dans un plat a gratin, disposer une premiere couche d'aubergines.</li>
+          <li>Napper de sauce tomate, ajouter un peu d'oignons et de mozzarella.</li>
+          <li>Repeter les couches jusqu'a epuisement des ingredients, terminer par la sauce tomate et le parmesan.</li>
+        </ol>
+      </div>
+      <div class="step-section">
+        <h3>Cuisson</h3>
+        <ol>
+          <li>Enfourner four prechauffe, jusqu'a ce que le dessus soit dore.</li>
+        </ol>
+        <span class="oven">190&deg;C &middot; 30 min</span>
+      </div>
+    </div>
+
+    <div class="recipe-block">
+      <p class="day-label">Jeudi &middot; 15 min prepa + 50 min four</p>
+      <h2>Gratin mediterraneen (quinoa, poulet, courgette)</h2>
+      <div class="step-section">
+        <h3>Preparation</h3>
+        <ol>
+          <li>Couper le poulet (300g) en morceaux, emincer les oignons et la courgette.</li>
+          <li>Dans un plat a gratin, melanger le quinoa cru, le poulet, la courgette, les oignons, les tomates cerises et les carres frais.</li>
+          <li>Ajouter une cuillere d'huile d'olive et verser le bouillon (500ml). Bien melanger pour repartir les ingredients.</li>
+        </ol>
+      </div>
+      <div class="step-section">
+        <h3>Cuisson</h3>
+        <ol>
+          <li>Couvrir le plat (papier alu ou couvercle) et enfourner.</li>
+          <li>Retirer la couverture et poursuivre a decouvert jusqu'a ce que le quinoa soit cuit et le dessus legerement dore.</li>
+        </ol>
+        <span class="oven">200&deg;C &middot; 40 min couvert + 10 min decouvert</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

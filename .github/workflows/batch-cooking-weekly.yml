@@ -1,0 +1,98 @@
+name: Batch Cooking - Envoi hebdomadaire
+
+# Vendredi 18h00 heure de Paris. GitHub Actions ne gère pas le changement
+# d'heure : on programme les deux horaires UTC possibles (été/hiver) et un
+# job de garde ne laisse passer que celui qui correspond à l'heure locale
+# réelle au moment du déclenchement (cf. batch-cooking/README.md).
+on:
+  schedule:
+    - cron: '0 16 * * 5'   # 18h00 Paris en été (CEST, UTC+2)
+    - cron: '0 17 * * 5'   # 18h00 Paris en hiver (CET, UTC+1)
+  workflow_dispatch: {}     # déclenchement manuel pour les tests
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour_paris=$(TZ=Europe/Paris date +%H)
+          if [ "$hour_paris" = "18" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false (heure Paris actuelle: $hour_paris)" >> "$GITHUB_OUTPUT"
+          fi
+
+  send:
+    needs: guard
+    if: needs.guard.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer les outils PDF (wkhtmltopdf, polices locales)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wkhtmltopdf poppler-utils fonts-dejavu fonts-liberation
+
+      - name: Installer Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      # ============================================================
+      # TODO — NON RÉSOLU, point de blocage connu (voir README.md)
+      # ============================================================
+      # Les connecteurs Notion et Gmail utilisés ci-dessous sont des
+      # serveurs MCP distants à authentification OAuth interactive.
+      # Cette étape doit restaurer les credentials obtenus lors d'une
+      # connexion interactive locale (`claude mcp list` pour les
+      # localiser) et déclarer les serveurs MCP distants pour ce job
+      # (fichier .mcp.json dédié ou `claude mcp add`).
+      # Emplacement/format exact non figés ici : à déterminer et
+      # documenter dans batch-cooking/README.md avant le premier run réel.
+      # Tant que cette étape n'est pas complétée, le job échoue de façon
+      # visible à l'étape suivante (comportement voulu, pas de silence).
+      #
+      # - name: Restaurer les credentials MCP Notion/Gmail
+      #   run: |
+      #     mkdir -p ~/.claude
+      #     echo "${{ secrets.CLAUDE_MCP_CREDENTIALS }}" > ~/.claude/<fichier-a-determiner>
+
+      - name: Exécuter le skill batch-cooking (planification + PDF + email)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p "$(cat <<'PROMPT'
+          Lis intégralement batch-cooking/skill/SKILL.md dans ce repo, puis exécute
+          le Workflow 1 (planification de la semaine) et le Workflow 3 (liste de
+          courses + PDF, cf. batch-cooking/skill/references/pdf-template.html pour
+          le gabarit) pour la semaine à venir.
+
+          Une fois le PDF généré (semaine-JJ-MM.pdf), envoie un email à
+          victor.bonnaf@gmail.com avec le planning de la semaine en corps de
+          message et le PDF en pièce jointe, via l'outil Gmail.
+
+          Important : si un outil Notion ou Gmail échoue (authentification,
+          indisponibilité...), ne continue pas silencieusement — termine avec un
+          message d'erreur clair pour que le job échoue visiblement.
+          PROMPT
+          )" --allowedTools "Bash,Read,Write,Glob"
+
+      - name: Notifier l'échec (canal indépendant de l'auth MCP)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Échec routine Batch Cooking - $(TZ=Europe/Paris date +%d/%m/%Y)" \
+            --body "La routine hebdomadaire d'envoi du batch cooking a échoué (run $(TZ=Europe/Paris date +%H:%M) heure de Paris).
+
+          Cause probable : authentification MCP Notion/Gmail expirée, non configurée, ou refus/erreur d'un des outils.
+
+          - Logs du run : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          - Procédure de ré-authentification : voir [batch-cooking/README.md](../../blob/main/batch-cooking/README.md)"
